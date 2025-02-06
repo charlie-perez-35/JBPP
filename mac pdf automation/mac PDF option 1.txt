@@ -1,0 +1,5 @@
+-- Mac PDF automation (bare bones, from Command line)
+
+$ cd /insert-folderpath
+$ mkdir ../PDF
+$ sips -s format pdf * --out "../PDF/"

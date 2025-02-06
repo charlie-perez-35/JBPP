@@ -1,0 +1,68 @@
+-- Mac PDF automation (fancy)
+
+-- When run, this script will launch a GUI for the user to navigate to the folder (second line - only prompt that the user needs to respond to)
+
+-- Install required pdf editor package beforehand
+brew install poppler
+
+-- Prompt the user to select the folder containing the TIFF files
+set folderPath to POSIX path of (choose folder with prompt "Select the folder containing TIFF files:")
+
+-- Get a list of TIFF files in the folder
+tell application "Finder"
+    set tiffFiles to files of folder folderPath whose name extension is in {"tiff", "tif"}
+end tell
+
+-- Process each TIFF file to create PDF
+repeat with tiffFile in tiffFiles
+    set tiffFilePath to POSIX path of (tiffFile as text)
+    set pdfFilePath to text 1 thru -5 of tiffFilePath & "pdf" -- Change file extension to PDF
+    
+    -- Convert TIFF to PDF using sips command line tool
+    do shell script "sips -s format pdf " & quoted form of tiffFilePath & " --out " & quoted form of pdfFilePath
+end repeat
+
+display dialog "PDF files created successfully!" buttons {"OK"} default button "OK"
+
+-- Get a list of PDF files in the folder
+tell application "Finder"
+    set pdfFiles to files of folder folderPath whose name extension is "pdf"
+end tell
+
+-- Create a dictionary to store PDF files based on their prefix
+set pdfDict to {}
+
+-- Process each PDF file and group them based on the first 7 digits of their filenames
+repeat with pdfFile in pdfFiles
+    set pdfFileName to name of pdfFile
+    set pdfPrefix to text 1 thru 7 of pdfFileName
+    
+    if pdfPrefix is not in pdfDict then
+        set pdfDict to pdfDict & {{pdfPrefix, {pdfFile}}}
+    else
+        set fileList to pdfDict's item pdfPrefix
+        set fileList to fileList & pdfFile
+        set pdfDict's item pdfPrefix to fileList
+    end if
+end repeat
+
+-- Combine PDF files with the same prefix
+repeat with pdfGroup in pdfDict
+    set pdfPrefix to item 1 of pdfGroup
+    set pdfFiles to item 2 of pdfGroup
+    
+    -- Check if there are multiple PDF files to combine
+    if (count pdfFiles) > 1 then
+        set combinedPDFName to folderPath & pdfPrefix & ".pdf"
+        
+        -- Combine PDF files using `pdfunite` command line tool
+        set pdfFileList to ""
+        repeat with pdfFile in pdfFiles
+            set pdfFileList to pdfFileList & quoted form of (POSIX path of pdfFile) & " "
+        end repeat
+        
+        do shell script "pdfunite " & pdfFileList & quoted form of combinedPDFName
+    end if
+end repeat
+
+display dialog "PDF files combined successfully!" buttons {"OK"} default button "OK"

@@ -1,0 +1,21 @@
+-- In between (Mac script w/ no command line, but also no combining of PDFs.
+
+tell application "Finder"
+  set myFolder to choose folder
+  set myFiles to files of myFolder whose name extension is in {"tif", "tiff", "TIF", "TIFF"}
+
+  if (exists folder "PDF" of folder myFolder) is false then
+    make folder at myFolder with properties {name:"PDF"}
+  end if
+
+  set formatChoices to {"jpeg", "pdf"}
+  set formatChoice to {choose from list formatChoices with prompt "Pick a format"}
+  set imgPaths to ""
+    repeat with myFile in myFiles
+        set imgPaths to imgPaths & quoted form of POSIX path of (myFile as text) & " "
+    end repeat
+  set destinationFolder to myFolder & "PDF:" as string
+  set destinationFolder to quoted form of POSIX path of destinationFolder
+  do shell script "sips -s format " & formatChoice & " --out " & destinationFolder
+  display dialog "Done !"
+end tell
